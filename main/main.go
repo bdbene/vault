@@ -15,10 +15,14 @@ func main() {
 		panic(err.Error())
 	}
 
-	text := []byte("Hello world")
+	text := []byte("Hello world!")
 
-	ciphertext, nonce := cipher.Encrypt(key, text)
-	fileio.WriteToFile(ciphertext, nonce)
+	{
+		ciphertext, nonce := cipher.Encrypt(key, text)
+		fileio.WriteToFile(ciphertext, nonce)
+	}
+
+	ciphertext, nonce := fileio.ReadFromFile()
 
 	deciphered := cipher.Decrypt(key, ciphertext, nonce)
 	fmt.Printf("%s\n", deciphered)
