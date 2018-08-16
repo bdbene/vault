@@ -1,30 +1,13 @@
-package main
+package cipher
 
 import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"fmt"
 	"io"
 )
 
-func main() {
-	key := make([]byte, 32)
-	_, err := rand.Read(key)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	text := []byte("Hello world")
-
-	ciphertext, nonce := encrypt(key, text)
-	fmt.Printf("%x\n", ciphertext)
-
-	deciphered := decrypt(key, ciphertext, nonce)
-	fmt.Printf("%s\n", deciphered)
-}
-
-func encrypt(key []byte, plaintext []byte) ([]byte, []byte) {
+func Encrypt(key []byte, plaintext []byte) ([]byte, []byte) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		panic(err.Error())
@@ -44,7 +27,7 @@ func encrypt(key []byte, plaintext []byte) ([]byte, []byte) {
 	return ciphertext, nonce
 }
 
-func decrypt(key []byte, ciphertext []byte, nonce []byte) []byte {
+func Decrypt(key []byte, ciphertext []byte, nonce []byte) []byte {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		panic(err.Error())
