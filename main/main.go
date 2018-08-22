@@ -1,8 +1,8 @@
 package main
 
 import (
-	"crypto/rand"
 	"fmt"
+	"os"
 
 	"github.com/bdbene/vault/cipher"
 	"github.com/bdbene/vault/config"
@@ -10,20 +10,24 @@ import (
 )
 
 func main() {
+	// Get input.
+	args := os.Args[1:]
+	if len(args) != 1 {
+		fmt.Println("Invalid arguments")
+		os.Exit(1)
+	}
+	password := args[0]
+
+	// Read configs.
 	var conf config.Config
 	config.GetConfigs(&conf)
-
-	// Create key.
-	key := make([]byte, 32)
-	_, err := rand.Read(key)
-	if err != nil {
-		panic(err.Error())
-	}
 
 	text := []byte("Hello world!")
 
 	// Set configurations.
 	io := fileio.NewFileio(conf.Storage.Location)
+
+	key := cipher.CreateKey(password)
 
 	// Encrypt.
 	{
