@@ -1,4 +1,4 @@
-package fileio
+package storage
 
 import (
 	"bufio"
@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/bdbene/vault/config"
 )
 
 // Fileio handles the read/write of ciphertext.
@@ -14,7 +16,8 @@ type Fileio struct {
 }
 
 // NewFileio is the factory method for Fileio.
-func NewFileio(fileName string) *Fileio {
+func NewFileio(conf *config.StorageConfig) (DataStore, error) {
+	fileName := conf.Location
 	io := new(Fileio)
 	io.fileName = fileName
 
@@ -33,11 +36,11 @@ func NewFileio(fileName string) *Fileio {
 		panic(err)
 	}
 
-	return io
+	return io, nil
 }
 
-// WriteToFile writes the ciphertext and corresponding nonce to a file in hex format seperated by comma.
-func (fileio *Fileio) WriteToFile(ciphertext []byte, nonce []byte) {
+// Writes the ciphertext and corresponding nonce to a file in hex format seperated by comma.
+func (fileio *Fileio) Write(ciphertext []byte, nonce []byte) {
 	// file, err := os.OpenFile(fileio.fileName, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
 	// TODO: Do not overwrite file.
 	file, err := os.Create(fileio.fileName)
@@ -65,8 +68,8 @@ func write(file *os.File, payload []byte) {
 	}
 }
 
-// ReadFromFile reads the ciphertext and corresponding nonce from a file.
-func (fileio *Fileio) ReadFromFile() (ciphertext, nonce []byte) {
+// Reads the ciphertext and corresponding nonce from a file.
+func (fileio *Fileio) Read() (ciphertext, nonce []byte) {
 	file, err := os.Open(fileio.fileName)
 	if err != nil {
 		panic(err)
@@ -83,4 +86,8 @@ func (fileio *Fileio) ReadFromFile() (ciphertext, nonce []byte) {
 	nonce, _ = hex.DecodeString(tokens[1])
 
 	return ciphertext, nonce
+}
+
+func init() {
+	RegisterDataStoreFactory("FileIoDriver", NewFileio)
 }

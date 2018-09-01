@@ -6,7 +6,7 @@ import (
 
 	"github.com/bdbene/vault/cipher"
 	"github.com/bdbene/vault/config"
-	"github.com/bdbene/vault/fileio"
+	"github.com/bdbene/vault/storage"
 )
 
 func main() {
@@ -24,18 +24,21 @@ func main() {
 
 	text := []byte("Hello world!")
 
-	// Set configurations.
-	io := fileio.NewFileio(conf.Storage.Location)
+	// Create DataStore based on configurations.
+	dataStore, err := storage.CreateDataStore(&conf.Storage)
+	if err != nil {
+		panic(err)
+	}
 
 	key := cipher.CreateKey(password)
 
 	// Encrypt.
 	{
 		ciphertext, nonce := cipher.Encrypt(key, text)
-		io.WriteToFile(ciphertext, nonce)
+		dataStore.Write(ciphertext, nonce)
 	}
 
-	ciphertext, nonce := io.ReadFromFile()
+	ciphertext, nonce := dataStore.Read()
 
 	deciphered := cipher.Decrypt(key, ciphertext, nonce)
 	fmt.Printf("%s\n", deciphered)
