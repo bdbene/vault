@@ -22,7 +22,13 @@ func main() {
 
 	// Read configs.
 	var conf config.Config
-	config.GetConfigs(&conf)
+	err := config.GetConfigs(&conf)
+	if err != nil {
+		fmt.Printf("%s\n", err.Error())
+		fmt.Printf("Cannot continue, shutting down.\n")
+		os.Exit(1)
+	}
+
 
 	text := []byte("Hello world!")
 
@@ -32,18 +38,18 @@ func main() {
 		panic(err)
 	}
 
-	key := cipher.CreateKey(password)
+	key, _ := cipher.CreateKey(password)
 
 	// Encrypt.
 	{
-		ciphertext, nonce := cipher.Encrypt(key, text)
+		ciphertext, nonce, _ := cipher.Encrypt(key, text)
 		dataStore.Write([]byte(identifier), ciphertext, nonce)
-		ciphertext, nonce = cipher.Encrypt(key, text)
+		ciphertext, nonce, _ = cipher.Encrypt(key, text)
 		dataStore.Write([]byte(identifier + "2"), ciphertext, nonce)
 	}
 
-	ciphertext, nonce := dataStore.Read([]byte(identifier + "2"))
+	ciphertext, nonce, _ := dataStore.Read([]byte(identifier + "2"))
 
-	deciphered := cipher.Decrypt(key, ciphertext, nonce)
+	deciphered, _ := cipher.Decrypt(key, ciphertext, nonce)
 	fmt.Printf("%s\n", deciphered)
 }
