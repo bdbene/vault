@@ -10,6 +10,14 @@ import (
 	"github.com/bdbene/vault/config"
 )
 
+type dataStoreError struct {
+	err string
+}
+
+func (e *dataStoreError) Error() string {
+	return fmt.Sprintf("DataStore error: %s", e.err)
+}
+
 // Fileio handles the read/write of ciphertext.
 type Fileio struct {
 	fileName string
@@ -40,10 +48,14 @@ func NewFileio(conf *config.StorageConfig) (DataStore, error) {
 }
 
 // Writes the ciphertext and corresponding nonce to a file in hex format seperated by comma.
-func (fileio *Fileio) Write(ciphertext []byte, nonce []byte) {
-	// file, err := os.OpenFile(fileio.fileName, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
-	// TODO: Do not overwrite file.
-	file, err := os.Create(fileio.fileName)
+func (fileio *Fileio) Write(identifier []byte, ciphertext []byte, nonce []byte) error{
+	
+	// Check if the identifier already exists.
+	if fileio.AlreadyExists(identifier) {
+		return &dataStoreError{"Id already exists"}
+	}
+
+	file, err := os.OpenFile(fileio.fileName, os.O_APPEND | os.O_WRONLY, 0600)
 	if err != nil {
 		panic(err)
 	}
@@ -54,10 +66,15 @@ func (fileio *Fileio) Write(ciphertext []byte, nonce []byte) {
 	hex.Encode(hexCipher, ciphertext)
 	hex.Encode(hexNonce, nonce)
 
+	// TODO: buffer this
+	write(file, identifier)
+	write(file, []byte{','})
 	write(file, hexCipher)
 	write(file, []byte{','})
 	write(file, hexNonce)
 	write(file, []byte{'\n'})
+
+	return nil
 }
 
 func write(file *os.File, payload []byte) {
@@ -69,7 +86,7 @@ func write(file *os.File, payload []byte) {
 }
 
 // Reads the ciphertext and corresponding nonce from a file.
-func (fileio *Fileio) Read() (ciphertext, nonce []byte) {
+func (fileio *Fileio) Read(identifier []byte) (ciphertext, nonce []byte) {
 	file, err := os.Open(fileio.fileName)
 	if err != nil {
 		panic(err)
@@ -78,14 +95,44 @@ func (fileio *Fileio) Read() (ciphertext, nonce []byte) {
 
 	// Scan() by default splits on "\n".
 	scanner := bufio.NewScanner(file)
-	scanner.Scan()
-	line := scanner.Text()
 
-	tokens := strings.Split(line, ",")
-	ciphertext, _ = hex.DecodeString(tokens[0])
-	nonce, _ = hex.DecodeString(tokens[1])
+	for scanner.Scan() {
+		line := scanner.Text()
+		tokens := strings.Split(line, ",")
+		lineId := tokens[0]
+		
+		if lineId == string(identifier) {
+			ciphertext, _ = hex.DecodeString(tokens[1])
+			nonce, _ = hex.DecodeString(tokens[2])
+
+		}
+	}
 
 	return ciphertext, nonce
+}
+
+func (fileio *Fileio) AlreadyExists(identifier []byte) bool {
+	file, err := os.Open(fileio.fileName)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		tokens := strings.Split(line, ",")
+		lineId := tokens[0]
+
+		fmt.Printf("line: %s\n id: %s\n", line, lineId)
+		
+		if lineId == string(identifier) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func init() {

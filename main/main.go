@@ -12,11 +12,13 @@ import (
 func main() {
 	// Get input.
 	args := os.Args[1:]
-	if len(args) != 1 {
+	if len(args) != 2 {
 		fmt.Println("Invalid arguments")
 		os.Exit(1)
 	}
-	password := args[0]
+
+	identifier := args[0]
+	password := args[1]
 
 	// Read configs.
 	var conf config.Config
@@ -35,10 +37,12 @@ func main() {
 	// Encrypt.
 	{
 		ciphertext, nonce := cipher.Encrypt(key, text)
-		dataStore.Write(ciphertext, nonce)
+		dataStore.Write([]byte(identifier), ciphertext, nonce)
+		ciphertext, nonce = cipher.Encrypt(key, text)
+		dataStore.Write([]byte(identifier + "2"), ciphertext, nonce)
 	}
 
-	ciphertext, nonce := dataStore.Read()
+	ciphertext, nonce := dataStore.Read([]byte(identifier + "2"))
 
 	deciphered := cipher.Decrypt(key, ciphertext, nonce)
 	fmt.Printf("%s\n", deciphered)

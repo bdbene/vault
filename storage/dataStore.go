@@ -4,8 +4,9 @@ import "github.com/bdbene/vault/config"
 
 // DataStore specifies the interface for storing data.
 type DataStore interface {
-	Write(ciphertext, nonce []byte)
-	Read() (ciphertext, nonce []byte)
+	Write(identifier, ciphertext, nonce []byte) error
+	Read(identifier []byte) (ciphertext, nonce []byte)
+	AlreadyExists(identifier []byte) bool
 }
 
 // DataStoreFactory is function type for creating creating DataStores
