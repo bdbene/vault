@@ -7,16 +7,18 @@ import (
 	"hash/fnv"
 	"io"
 	mathRand "math/rand"
+	"fmt"
 )
 
 // CreateKey uses the password to create an AES key.
 func CreateKey(password string) ([]byte, error) {
 	hash := fnv.New64a()
 	hash.Write([]byte(password))
+	fmt.Printf("hash: %d\n", hash.Sum64())
 	mathRand.Seed(int64(hash.Sum64()))
 
 	// Create key.
-	key := make([]byte, 32)
+	key := make([]byte, 64)
 	_, err := rand.Read(key)
 	if err != nil {
 		return nil, &CipherError{"Key generation", err.Error()}
