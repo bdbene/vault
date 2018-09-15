@@ -51,13 +51,17 @@ func NewFileio(conf *config.StorageConfig) (DataStore, error) {
 func (fileio *Fileio) Write(identifier []byte, ciphertext []byte, nonce []byte) error{
 	
 	// Check if the identifier already exists.
-	if fileio.AlreadyExists(identifier) {
+	exists, err := fileio.AlreadyExists(identifier)
+	if err != nil {
+		return err
+	}
+	if exists {
 		return &dataStoreError{"Id already exists"}
 	}
 
 	file, err := os.OpenFile(fileio.fileName, os.O_APPEND | os.O_WRONLY, 0600)
 	if err != nil {
-		panic(err)
+		return &dataStoreError{err.Error()}
 	}
 	defer file.Close()
 
@@ -77,7 +81,7 @@ func (fileio *Fileio) Write(identifier []byte, ciphertext []byte, nonce []byte) 
 	return nil
 }
 
-func write(file *os.File, payload []byte) {
+func write(file *os.File, payload []byte)  {
 	n, err := file.Write(payload)
 	if err != nil {
 		fmt.Printf("wrote %d bytes\n", n)
@@ -86,10 +90,10 @@ func write(file *os.File, payload []byte) {
 }
 
 // Reads the ciphertext and corresponding nonce from a file.
-func (fileio *Fileio) Read(identifier []byte) (ciphertext, nonce []byte) {
+func (fileio *Fileio) Read(identifier []byte) (ciphertext, nonce []byte, err error) {
 	file, err := os.Open(fileio.fileName)
 	if err != nil {
-		panic(err)
+		return nil, nil, &DataStoreError{err.Error()}
 	}
 	defer file.Close()
 
@@ -102,19 +106,18 @@ func (fileio *Fileio) Read(identifier []byte) (ciphertext, nonce []byte) {
 		lineId := tokens[0]
 		
 		if lineId == string(identifier) {
-			ciphertext, _ = hex.DecodeString(tokens[1])
-			nonce, _ = hex.DecodeString(tokens[2])
-
+			ciphertext, err = hex.DecodeString(tokens[1])
+			nonce, err = hex.DecodeString(tokens[2])
 		}
 	}
 
-	return ciphertext, nonce
+	return ciphertext, nonce, nil
 }
 
-func (fileio *Fileio) AlreadyExists(identifier []byte) bool {
+func (fileio *Fileio) AlreadyExists(identifier []byte) (bool, error) {
 	file, err := os.Open(fileio.fileName)
 	if err != nil {
-		panic(err)
+		return false, &DataStoreError{err.Error()}
 	}
 	defer file.Close()
 
@@ -124,15 +127,13 @@ func (fileio *Fileio) AlreadyExists(identifier []byte) bool {
 		line := scanner.Text()
 		tokens := strings.Split(line, ",")
 		lineId := tokens[0]
-
-		fmt.Printf("line: %s\n id: %s\n", line, lineId)
 		
 		if lineId == string(identifier) {
-			return true
+			return true, nil
 		}
 	}
 
-	return false
+	return false, nil
 }
 
 func init() {

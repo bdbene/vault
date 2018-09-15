@@ -9,8 +9,8 @@ import (
 	mathRand "math/rand"
 )
 
-// CreateKey uses the password to create an AES key
-func CreateKey(password string) []byte {
+// CreateKey uses the password to create an AES key.
+func CreateKey(password string) ([]byte, error) {
 	hash := fnv.New64a()
 	hash.Write([]byte(password))
 	mathRand.Seed(int64(hash.Sum64()))
@@ -19,43 +19,43 @@ func CreateKey(password string) []byte {
 	key := make([]byte, 32)
 	_, err := rand.Read(key)
 	if err != nil {
-		panic(err.Error())
+		return nil, &CipherError{"Key generation", err.Error()}
 	}
 
-	return key
+	return key, nil
 }
 
-// Encrypt the plaintext using the given AES key
-func Encrypt(key []byte, plaintext []byte) ([]byte, []byte) {
+// Encrypt the plaintext using the given AES key, returns random nonce used as well.
+func Encrypt(key []byte, plaintext []byte) ([]byte, []byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err.Error())
+		return nil, nil, &CipherError{"Encryption", err.Error()}
 	}
 
 	nonce := make([]byte, 12)
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		panic(err.Error())
+		return nil, nil, &CipherError{"Encryption", err.Error()}
 	}
 
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil {
-		panic(err.Error())
+		return nil, nil, &CipherError{"Encryption", err.Error()}
 	}
 
 	ciphertext := aesgcm.Seal(nil, nonce, plaintext, nil)
-	return ciphertext, nonce
+	return ciphertext, nonce, nil
 }
 
 // Decrypt the ciphertext using the given key and nonce
-func Decrypt(key []byte, ciphertext []byte, nonce []byte) []byte {
+func Decrypt(key []byte, ciphertext []byte, nonce []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err.Error())
+		return nil, &CipherError{"Decryption", err.Error()}
 	}
 
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil {
-		panic(err.Error())
+		return nil, &CipherError{"Decryption", err.Error()}
 	}
 
 	plaintext, err := aesgcm.Open(nil, nonce, ciphertext, nil)
@@ -63,5 +63,5 @@ func Decrypt(key []byte, ciphertext []byte, nonce []byte) []byte {
 		panic(err.Error())
 	}
 
-	return plaintext
+	return plaintext, nil
 }

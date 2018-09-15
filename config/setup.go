@@ -10,7 +10,7 @@ import (
 func GetConfigs(conf *Config) error {
 	data, err := readConfigurations()
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 
 	toml.Decode(data, conf)
@@ -20,7 +20,7 @@ func GetConfigs(conf *Config) error {
 func readConfigurations() (string, error) {
 	configurations, err := ioutil.ReadFile("./config.tml")
 	if err != nil {
-		panic(err.Error())
+		return "", &ConfigError{err.Error()}
 	}
 
 	return string(configurations[:]), nil
