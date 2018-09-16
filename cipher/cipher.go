@@ -10,10 +10,10 @@ import (
 )
 
 // CreateKey generates a key based on the given secret
-func CreateKey(password string) []byte {
+func CreateKey(password []byte) []byte {
 	key := make([]byte, 32)
 
-	sha3.ShakeSum256(key, []byte(password))
+	sha3.ShakeSum256(key, password)
 	return key
 }
 

@@ -1,3 +1,6 @@
 [storage]
 location = "ciphers.txt"
 driver = "FileIoDriver"
+
+[server]
+port = ":8080"
