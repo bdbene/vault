@@ -29,7 +29,6 @@ func main() {
 		os.Exit(1)
 	}
 
-
 	text := []byte("Hello world!")
 
 	// Create DataStore based on configurations.
@@ -38,16 +37,21 @@ func main() {
 		panic(err)
 	}
 
-	key, _ := cipher.CreateKey(password)
-
-	// Encrypt.
 	{
-		ciphertext, nonce, _ := cipher.Encrypt(key, text)
+		key := cipher.CreateKey(password)
+		fmt.Printf("%x\n", key)
+		// Encrypt.
+
+		ciphertext, nonce, err := cipher.Encrypt(key, text)
+		if err != nil {
+			panic(err)
+		}
 		dataStore.Write([]byte(identifier), ciphertext, nonce)
 		ciphertext, nonce, _ = cipher.Encrypt(key, text)
-		dataStore.Write([]byte(identifier + "2"), ciphertext, nonce)
+		dataStore.Write([]byte(identifier+"2"), ciphertext, nonce)
 	}
 
+	key := cipher.CreateKey(password)
 	ciphertext, nonce, _ := dataStore.Read([]byte(identifier + "2"))
 
 	deciphered, _ := cipher.Decrypt(key, ciphertext, nonce)

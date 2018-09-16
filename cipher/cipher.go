@@ -4,25 +4,17 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"hash/fnv"
 	"io"
-	mathRand "math/rand"
+
+	"golang.org/x/crypto/sha3"
 )
 
-// CreateKey uses the password to create an AES key.
-func CreateKey(password string) ([]byte, error) {
-	hash := fnv.New64a()
-	hash.Write([]byte(password))
-	mathRand.Seed(int64(hash.Sum64()))
-
-	// Create key.
+// CreateKey generates a key based on the given secret
+func CreateKey(password string) []byte {
 	key := make([]byte, 32)
-	_, err := rand.Read(key)
-	if err != nil {
-		return nil, &CipherError{"Key generation", err.Error()}
-	}
 
-	return key, nil
+	sha3.ShakeSum256(key, []byte(password))
+	return key
 }
 
 // Encrypt the plaintext using the given AES key, returns random nonce used as well.
