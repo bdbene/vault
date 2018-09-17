@@ -28,7 +28,9 @@ func main() {
 		panic(err)
 	}
 
-	handler := handler.Handler{dataStore}
-	server := server.NewServer(&conf.Server, &handler)
+	handler := handler.NewHandler(dataStore, &conf.Handler)
+	server := server.NewServer(&conf.Server, handler)
+
+	handler.ProcessRequests()
 	server.Listen()
 }

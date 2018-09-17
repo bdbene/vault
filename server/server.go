@@ -51,18 +51,21 @@ func (server *RestServer) WriteSecret(writer http.ResponseWriter, request *http.
 	var payload writeStruct
 	err := decoder.Decode(&payload)
 	if err != nil {
-		log.Print("ERROR: Bad request")
+		log.Printf("ERROR Bad request: %s", err.Error())
 		fmt.Fprintf(writer, "Failure to decode payload.")
 		return
 	}
 
-	err = server.handler.WriteSecret(
-		[]byte(payload.Identifier),
-		[]byte(payload.Password),
-		[]byte(payload.Secret))
+	errFuture := server.handler.RequestWrite(
+					[]byte(payload.Identifier),
+					[]byte(payload.Password),
+					[]byte(payload.Secret))
+	
 
-	if err != nil {
-		log.Print("ERROR: failure.")
+	errResult := <-errFuture
+	
+	if errResult != nil {
+		log.Printf("ERROR failure: %s", errResult.Error())
 		fmt.Fprintf(writer, "Failure occured")
 		return
 	}
@@ -84,18 +87,18 @@ func (server *RestServer) QuerySecret(writer http.ResponseWriter, request *http.
 		return
 	}
 
-	secret, err := server.handler.QuerySecret(
-		[]byte(payload.Identifier),
-		[]byte(payload.Password))
-
-	if err != nil {
-		log.Print("ERROR: failure.")
-		fmt.Fprintf(writer, "Failure occured")
-		return
+	secretFuture, errFuture :=  server.handler.RequestQuery(
+								[]byte(payload.Identifier),
+								[]byte(payload.Password))
+	
+	select {
+	case secret := <- secretFuture:
+		fmt.Fprintf(writer, "%s", secret)
+		log.Print("INFO: Secret successfully retreived.")
+	case err := <- errFuture:
+		log.Printf("Error: %s\n", err.Error())
+		fmt.Fprintf(writer, "ERROR: failure.")
 	}
-
-	fmt.Fprintf(writer, "Secret: %s", secret)
-	log.Print("INFO: Secret successfully retreived.")
 }
 
 // Listen for rest calls from clients.
