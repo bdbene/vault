@@ -4,7 +4,7 @@ import (
 	"github.com/bdbene/vault/cipher"
 	"github.com/bdbene/vault/storage"
 	"github.com/bdbene/vault/config"
-	"fmt"
+	"log"
 )
 
 type write struct {
@@ -62,13 +62,13 @@ func (handler *Handler) process() {
 	for {
 		select {
 		case w := <-handler.writeRequests:
+			log.Printf("Buffered requests: %d\n", len(handler.writeRequests))
 			handler.processWrite(w)
 		case q := <-handler.queryRequests:
+			log.Printf("Buffered requests: %d\n", len(handler.queryRequests))
 			handler.processQuery(q)
 		}
 	}
-
-	fmt.Printf("ERROR: SHOULDN'T SEE THIS")
 }
 
 // WriteSecret encrypts secret using password, then stores it using identifier as a lookup key.
