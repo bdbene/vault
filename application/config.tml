@@ -4,3 +4,7 @@ driver = "FileIoDriver"
 
 [server]
 port = ":8080"
+
+[handler]
+writeBufferSize = 200
+QueryBufferSize = 200
