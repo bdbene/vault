@@ -2,6 +2,8 @@ package storage
 
 import "github.com/bdbene/vault/config"
 
+//go:generate mockgen -destination=../mocks/mock_storage.go -package=mocks github.com/bdbene/vault/storage DataStore
+
 // DataStore specifies the interface for storing data.
 type DataStore interface {
 	Write(identifier, ciphertext, nonce []byte) error

@@ -1,33 +1,35 @@
 package handler
 
 import (
-	"github.com/bdbene/vault/cipher"
-	"github.com/bdbene/vault/storage"
-	"github.com/bdbene/vault/config"
 	"log"
+
+	"github.com/bdbene/vault/cipher"
+	"github.com/bdbene/vault/config"
+	"github.com/bdbene/vault/storage"
 )
 
 type write struct {
-	identifier 	[]byte
-	password 	[]byte
-	secret 		[]byte
-	err 		chan error
+	identifier []byte
+	password   []byte
+	secret     []byte
+	err        chan error
 }
 
 type query struct {
-	identifier	[]byte
-	password	[]byte
-	result		chan string
-	err			chan error
+	identifier []byte
+	password   []byte
+	result     chan string
+	err        chan error
 }
 
 // Handler provides an interface for the internal workings of the applcation.
 type Handler struct {
-	dataStore storage.DataStore
+	dataStore     storage.DataStore
 	writeRequests chan write
 	queryRequests chan query
 }
 
+// NewHandler returns a Handler with the correct configurations and DataStore.
 func NewHandler(dataStore storage.DataStore, configs *config.HandlerConfig) *Handler {
 	handler := new(Handler)
 	handler.dataStore = dataStore
@@ -46,6 +48,8 @@ func (handler *Handler) RequestWrite(identifier, password, secret []byte) chan e
 	return errFuture
 }
 
+// RequestQuery queues a request to query a secret. Returned channels will
+// contain either the result or an error.
 func (handler *Handler) RequestQuery(identifier, password []byte) (chan string, chan error) {
 	resultFuture := make(chan string)
 	errFuture := make(chan error)
@@ -54,6 +58,7 @@ func (handler *Handler) RequestQuery(identifier, password []byte) (chan string, 
 	return resultFuture, errFuture
 }
 
+// ProcessRequests will start processing all requests concurrently.
 func (handler *Handler) ProcessRequests() {
 	go handler.process()
 }
@@ -71,7 +76,6 @@ func (handler *Handler) process() {
 	}
 }
 
-// WriteSecret encrypts secret using password, then stores it using identifier as a lookup key.
 func (handler *Handler) processWrite(w write) {
 	key := cipher.CreateKey(w.password)
 	ciphertext, nonce, err := cipher.Encrypt(key, w.secret)
@@ -89,7 +93,6 @@ func (handler *Handler) processWrite(w write) {
 	w.err <- nil
 }
 
-// QuerySecret returns the deciphered secret from storage.
 func (handler *Handler) processQuery(q query) {
 	key := cipher.CreateKey(q.password)
 	ciphertext, nonce, err := handler.dataStore.Read(q.identifier)

@@ -37,7 +37,7 @@ func TestRegisterExistingFactory_CannotRegister(t *testing.T) {
 
 func TestCreateDataStore_CorrectDataStoreCreated(t *testing.T) {
 	storeName := "storeName"
-	configs := &config.StorageConfig{"/dev/null", storeName}
+	configs := &config.StorageConfig{Location: "/dev/null", Driver: storeName}
 	RegisterDataStoreFactory(storeName, NewFileio)
 
 	_, err := CreateDataStore(configs)
