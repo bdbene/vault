@@ -1,5 +1,8 @@
 # Executable
 application
 
+# Can generate mocks using "go generate ./..."
+mocks/*
+
 # Storage files
 *.txt
