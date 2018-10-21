@@ -24,15 +24,21 @@ type queryStruct struct {
 
 // RestServer that exposes writing and querying across network.
 type RestServer struct {
-	port    string
-	handler *handler.Handler
-	router  *mux.Router
+	port       string
+	handler    *handler.Handler
+	router     *mux.Router
+	serverCert string
+	serverKey  string
+	tlsEnabled bool
 }
 
 // NewServer configures a new restful service.
 func NewServer(configs *config.ServiceConfig, handler *handler.Handler) *RestServer {
 	server := new(RestServer)
 	server.port = configs.Port
+	server.tlsEnabled = configs.TLSEnabled
+	server.serverCert = configs.ServerCert
+	server.serverKey = configs.ServerKey
 	server.handler = handler
 
 	router := mux.NewRouter().StrictSlash(true)
@@ -57,13 +63,12 @@ func (server *RestServer) WriteSecret(writer http.ResponseWriter, request *http.
 	}
 
 	errFuture := server.handler.RequestWrite(
-					[]byte(payload.Identifier),
-					[]byte(payload.Password),
-					[]byte(payload.Secret))
-	
+		[]byte(payload.Identifier),
+		[]byte(payload.Password),
+		[]byte(payload.Secret))
 
 	errResult := <-errFuture
-	
+
 	if errResult != nil {
 		log.Printf("ERROR failure: %s", errResult.Error())
 		fmt.Fprintf(writer, "Failure occured")
@@ -87,15 +92,15 @@ func (server *RestServer) QuerySecret(writer http.ResponseWriter, request *http.
 		return
 	}
 
-	secretFuture, errFuture :=  server.handler.RequestQuery(
-								[]byte(payload.Identifier),
-								[]byte(payload.Password))
-	
+	secretFuture, errFuture := server.handler.RequestQuery(
+		[]byte(payload.Identifier),
+		[]byte(payload.Password))
+
 	select {
-	case secret := <- secretFuture:
+	case secret := <-secretFuture:
 		fmt.Fprintf(writer, "%s", secret)
 		log.Print("INFO: Secret successfully retreived.")
-	case err := <- errFuture:
+	case err := <-errFuture:
 		log.Printf("Error: %s\n", err.Error())
 		fmt.Fprintf(writer, "ERROR: failure.")
 	}
@@ -104,5 +109,10 @@ func (server *RestServer) QuerySecret(writer http.ResponseWriter, request *http.
 // Listen for rest calls from clients.
 func (server *RestServer) Listen() {
 	log.Print("Running server...")
-	log.Fatal(http.ListenAndServe(server.port, server.router))
+
+	if server.tlsEnabled {
+		log.Fatal(http.ListenAndServeTLS(server.port, server.serverCert, server.serverKey, server.router))
+	} else {
+		log.Fatal(http.ListenAndServe(server.port, server.router))
+	}
 }
