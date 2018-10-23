@@ -4,7 +4,7 @@ package config
 type Config struct {
 	Storage StorageConfig
 	Server  ServiceConfig
-	Handler	HandlerConfig
+	Handler HandlerConfig
 }
 
 // StorageConfig stores the configurations for storing data.
@@ -15,9 +15,13 @@ type StorageConfig struct {
 
 // ServiceConfig stores the configurations for running restful service.
 type ServiceConfig struct {
-	Port string
+	Port       string
+	ServerCert string
+	ServerKey  string
+	TLSEnabled bool
 }
 
+// HandlerConfig stores the configurations for handling requests.
 type HandlerConfig struct {
 	WriteBufferSize int
 	QueryBufferSize int

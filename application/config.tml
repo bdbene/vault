@@ -4,6 +4,9 @@ driver = "FileIoDriver"
 
 [server]
 port = ":8080"
+serverCert = "server-cert-location"
+serverKey = "server-key-location"
+TLSEnabled = false
 
 [handler]
 writeBufferSize = 200
